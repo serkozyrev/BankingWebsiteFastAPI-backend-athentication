@@ -56,7 +56,8 @@ models.Base.metadata.create_all(engine)
 
 origins = [
     "http://localhost:3000",
-    "http://localhost:3001"
+    "http://localhost:3001",
+    "https://singular-meerkat-fdc7a5.netlify.app"
 ]
 app.add_middleware(
     CORSMiddleware,

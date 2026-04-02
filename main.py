@@ -10,7 +10,7 @@ from auth import authentication
 
 from db.database import engine, get_db
 from db import models
-from routers import revenue, expense, analytics, user, aiAgent
+from routers import revenue, expense, analytics, user
 from routers.schemas import RecordBase, SearchRecord
 
 app = FastAPI()

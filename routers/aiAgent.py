@@ -8,7 +8,7 @@ from auth.oAuth2 import get_current_user
 from db import db_revenue, db_expense, db_aiagent
 from db.database import get_db
 from helpers import information
-from routers.schemas import AgentDisplay, AgentRequestBase
+from routers.schemas import AgentDisplay, AgentRequestBase, UserAuth
 
 router = APIRouter(
     prefix="/ai",

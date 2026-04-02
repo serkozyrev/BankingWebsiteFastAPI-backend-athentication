@@ -48,7 +48,7 @@ def search(request:SearchRecord,db:Session=Depends(get_db)):
     return information.search(request, db)
 app.include_router(user.router)
 app.include_router(authentication.router)
-app.include_router(aiAgent.router)
+# app.include_router(aiAgent.router)
 app.include_router(expense.router)
 app.include_router(revenue.router)
 app.include_router(analytics.router)

@@ -4,11 +4,11 @@ import string, random, shutil
 from fastapi import HTTPException, status
 from decimal import Decimal
 from sqlalchemy import cast, desc, Integer
-from openai import OpenAI
+from openai import OpenAI, AsyncOpenAI
 import json
 from dotenv import load_dotenv
 load_dotenv()
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 SYSTEM_PROMPT = """
 You are a helper for home accounting software.
 Your responsibility is to translate user request into JSON.
@@ -22,7 +22,7 @@ translate it in terms of financial terms.
 Format:
 {
   "intent": "create_transaction" | "ask_report" | "update_transaction",
-  "transaction_type": "income" | "expense" | "transfer" | null,
+  "transaction_type": "income" | "expense",
   "amount": number | null,
   "account_type":string | null,
   "category": string | null,
@@ -37,9 +37,9 @@ import datetime
 from helpers import information
 
 
-def parse_entry_with_ai(request: AgentRequestBase, db:Session, user_id:int):
-    print(request)
-    response = client.responses.create(
+async def parse_entry_with_ai(request: AgentRequestBase, db:Session, user_id:int):
+    print(request.description)
+    response = await client.responses.create(
         model="gpt-5.4",
         input=[
             {"role": "system", "content": SYSTEM_PROMPT},
@@ -49,3 +49,5 @@ def parse_entry_with_ai(request: AgentRequestBase, db:Session, user_id:int):
 
     raw_text = response.output_text
     print(raw_text)
+    parsed = json.loads(raw_text)
+    return parsed

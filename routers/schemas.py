@@ -28,6 +28,7 @@ class RevenueBase(BaseModel):
     date:date
     category:str
     transaction_type:str
+    account_type: str
 
 class RevenueResponse(RevenueBase):
     revenue_id: int
@@ -42,6 +43,7 @@ class EditRevenueRecord(BaseModel):
     revenue_balance: Optional[Decimal]
     date: Optional[date]
     category: Optional[str]
+    account_type: Optional[str]
 
 class ExpenseBase(BaseModel):
     description: str
@@ -87,4 +89,16 @@ class Analytics(BaseModel):
     account_type_second: Optional[str]=None
 
 class SearchRecord(BaseModel):
+    description: str
+
+class AgentDisplay(BaseModel):
+    intent:str
+    transaction_type:str
+    amount:Decimal
+    description:str
+    date:date
+    account_type:str
+    category:str
+
+class AgentRequestBase(BaseModel):
     description: str

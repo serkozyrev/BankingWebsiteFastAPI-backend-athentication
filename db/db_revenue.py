@@ -10,6 +10,58 @@ from db.models import DbRevenue, DbAccount
 import datetime
 from helpers import information
 
+TRANSFER_MAP = {
+    "transferToChequing": "Chequing",
+    "transferToVisa": "Visa",
+    "transferToLineOfCredit": "LineOfCredit",
+}
+
+def add_sub_money(account, amount):
+    account.user_balance = round(account.user_balance + amount, 2)
+
+def apply_transfer(source, target, amount, accounts, reverse=False):
+    source_acc = accounts[source]
+    target_acc = accounts[target]
+
+    # Correct financial rules
+    effects = {
+        ("Chequing", "Visa"): (-amount, -amount),
+        ("Chequing", "LineOfCredit"): (-amount, -amount),
+
+        ("Visa", "Chequing"): (amount, amount),
+        ("LineOfCredit", "Chequing"): (amount, amount),
+
+        ("Visa", "LineOfCredit"): (amount, -amount),
+        ("LineOfCredit", "Visa"): (amount, -amount),
+    }
+
+    delta_source, delta_target = effects[(source, target)]
+
+    if reverse:
+        print(delta_source, delta_target)
+        delta_source = -delta_source
+        delta_target = -delta_target
+
+    add_sub_money(source_acc, delta_source)
+    add_sub_money(target_acc, delta_target)
+
+def apply_normal(account_name, amount, accounts, reverse=False):
+    acc = accounts[account_name]
+
+    if account_name == "Chequing":
+        delta = -amount      # expense reduces cash
+    else:
+        delta = amount     # expense increases debt
+
+    if reverse:
+        if account_name == "Chequing":
+            print('test')
+            delta = amount
+        else:
+            delta = -amount
+
+    add_sub_money(acc, delta)
+
 def add_revenue(request: RevenueBase, db: Session, user_id: int):
     print(request)
 
@@ -26,38 +78,57 @@ def add_revenue(request: RevenueBase, db: Session, user_id: int):
         transaction_month = month,
         transaction_year = year,
         category = request.category,
-        transaction_type = request.transaction_type
+        transaction_type = request.transaction_type,
+        account_type = request.account_type
     )
     db.add(revenue_post)
 
-    if request.category == 'chequing':
-        chequing_acc = db.query(DbAccount).filter(DbAccount.user_id == user_id,
-                                                  DbAccount.description == "Chequing").first()
-        if not chequing_acc:
-            raise HTTPException(status_code=404, detail="Chequing not found")
+    accounts = {
+        "Chequing": db.query(DbAccount).filter_by(user_id=user_id, description="Chequing").first(),
+        "Visa": db.query(DbAccount).filter_by(user_id=user_id, description="Visa").first(),
+        "LineOfCredit": db.query(DbAccount).filter_by(user_id=user_id, description="LineOfCredit").first(),
+    }
 
-        new_balance=chequing_acc.user_balance+ request.revenue_balance
-        chequing_acc.user_balance=round(new_balance,2)
-        print(chequing_acc.user_balance)
-        db.add(chequing_acc)
-    elif request.category == 'visa':
-        visa_acc = db.query(DbAccount).filter(DbAccount.user_id == user_id,
-                                              DbAccount.description == "Visa").first()
-        if not visa_acc:
-            raise HTTPException(status_code=404, detail="Visa account not found")
+    new_account = revenue_post.account_type
+    new_category = revenue_post.category
+    new_amount = revenue_post.revenue_balance
 
-        new_balance = visa_acc.user_balance + request.revenue_balance
-        visa_acc.user_balance = round(new_balance, 2)
-        db.add(visa_acc)
-    elif request.category == 'lineofcredit':
-        line_of_credit_acc = db.query(DbAccount).filter(DbAccount.user_id == user_id,
-                                                        DbAccount.description == "LineOfCredit").first()
-        if not line_of_credit_acc:
-            raise HTTPException(status_code=404, detail="Visa account not found")
+    if new_category in TRANSFER_MAP:
+        new_target = TRANSFER_MAP[new_category]
+        apply_transfer(new_account, new_target, new_amount, accounts, reverse=False)
+        db.add(accounts[new_target])
+    else:
+        add_sub_money(accounts[new_account], new_amount)
+    db.add(accounts[new_account])
+    # if request.category == 'chequing':
+    #     chequing_acc = db.query(DbAccount).filter(DbAccount.user_id == user_id,
+    #                                               DbAccount.description == "Chequing").first()
+    #     if not chequing_acc:
+    #         raise HTTPException(status_code=404, detail="Chequing not found")
+    #
+    #     new_balance=chequing_acc.user_balance+ request.revenue_balance
+    #     chequing_acc.user_balance=round(new_balance,2)
+    #     print(chequing_acc.user_balance)
+    #     db.add(chequing_acc)
+    # elif request.category == 'visa':
+    #     visa_acc = db.query(DbAccount).filter(DbAccount.user_id == user_id,
+    #                                           DbAccount.description == "Visa").first()
+    #     if not visa_acc:
+    #         raise HTTPException(status_code=404, detail="Visa account not found")
+    #
+    #     new_balance = visa_acc.user_balance + request.revenue_balance
+    #     visa_acc.user_balance = round(new_balance, 2)
+    #     db.add(visa_acc)
+    # elif request.category == 'lineofcredit':
+    #     line_of_credit_acc = db.query(DbAccount).filter(DbAccount.user_id == user_id,
+    #                                                     DbAccount.description == "LineOfCredit").first()
+    #     if not line_of_credit_acc:
+    #         raise HTTPException(status_code=404, detail="Visa account not found")
+    #
+    #     new_balance = line_of_credit_acc.user_balance + request.revenue_balance
+    #     line_of_credit_acc.user_balance = round(new_balance, 2)
+    #     db.add(line_of_credit_acc)
 
-        new_balance = line_of_credit_acc.user_balance + request.revenue_balance
-        line_of_credit_acc.user_balance = round(new_balance, 2)
-        db.add(line_of_credit_acc)
     db.commit()
     db.refresh(revenue_post) #'account_info':account_info
     return get_all_revenue(db, user_id)
@@ -102,76 +173,112 @@ def copy_record(request:RecordBase, db:Session, user_id: int):
         transaction_month=month,
         transaction_year=year,
         category=revenue_record.category,
-        transaction_type=revenue_record.transaction_type
+        transaction_type=revenue_record.transaction_type,
+        account_type = revenue_record.account_type
     )
     # print(revenue_post)
     db.add(revenue_post)
-    if revenue_record.category == 'chequing':
-        chequing_acc = db.query(DbAccount).filter(DbAccount.user_id == user_id,
-                                                  DbAccount.description == "Chequing").first()
-        if not chequing_acc:
-            raise HTTPException(status_code=404, detail="Chequing not found")
 
-        new_balance=chequing_acc.user_balance+ revenue_record.revenue_balance
-        chequing_acc.user_balance=round(new_balance,2)
-        db.add(chequing_acc)
-    elif revenue_record.category == 'visa':
-        visa_acc = db.query(DbAccount).filter(DbAccount.user_id == user_id,
-                                              DbAccount.description == "Visa").first()
-        if not visa_acc:
-            raise HTTPException(status_code=404, detail="Visa account not found")
+    accounts = {
+        "Chequing": db.query(DbAccount).filter_by(user_id=user_id, description="Chequing").first(),
+        "Visa": db.query(DbAccount).filter_by(user_id=user_id, description="Visa").first(),
+        "LineOfCredit": db.query(DbAccount).filter_by(user_id=user_id, description="LineOfCredit").first(),
+    }
 
-        new_balance = visa_acc.user_balance + revenue_record.revenue_balance
-        visa_acc.user_balance = round(new_balance, 2)
-        db.add(visa_acc)
+    new_account = revenue_post.account_type
+    new_category = revenue_post.category
+    new_amount = revenue_post.expense_balance
+    if new_category in TRANSFER_MAP:
+        new_target = TRANSFER_MAP[new_category]
+        apply_transfer(new_account, new_target, new_amount, accounts, reverse=False)
+        db.add(accounts[new_target])
+    else:
+        apply_normal(new_account, new_amount, accounts, reverse=False)
+    db.add(accounts[new_account])
     db.commit() #'account_info':account_info
     db.refresh(revenue_post)
     return get_all_revenue(db, user_id)
 
 
 def edit_revenue_record(request:EditRevenueRecord, db:Session, user_id:int):
-    revenue_item=db.get(DbRevenue, request.id)
+    revenue_item = db.query(DbRevenue).filter(
+        DbRevenue.revenue_id == request.id,
+        DbRevenue.user_id == user_id
+    ).first()
     if not revenue_item:
         raise HTTPException(status_code=404, detail="Revenue record not found")
     data=request.model_dump(exclude_unset=True)
-    chequing_acc = db.query(DbAccount).filter(DbAccount.user_id == user_id,
-                                              DbAccount.description == "Chequing").first()
-    visa_acc = db.query(DbAccount).filter(DbAccount.user_id == user_id,
-                                          DbAccount.description == "Visa").first()
-    new_amount=data.get('revenue_balance')
-    old_balance=revenue_item.revenue_balance
+    accounts = {
+        "Chequing": db.query(DbAccount).filter_by(user_id=user_id, description="Chequing").first(),
+        "Visa": db.query(DbAccount).filter_by(user_id=user_id, description="Visa").first(),
+        "LineOfCredit": db.query(DbAccount).filter_by(user_id=user_id, description="LineOfCredit").first(),
+    }
 
-    print('database revenue_balance',revenue_item.revenue_balance, 'request revenue_balance', data['revenue_balance'])
-    if data.get('category') == 'chequing':
-        new_balance=(chequing_acc.user_balance-old_balance)+new_amount
-        chequing_acc.user_balance=round(new_balance,2)
-        db.add(chequing_acc)
+    old_account = revenue_item.account_type
+    old_category = revenue_item.category
+    old_amount = revenue_item.revenue_balance
+
+    new_account = data['account_type']
+    new_category = data['category']
+    new_amount = data['revenue_balance']
+
+    if old_category in TRANSFER_MAP:
+        old_target = TRANSFER_MAP[old_category]
+        apply_transfer(old_account, old_target, old_amount, accounts, reverse=True)
     else:
-        new_balance = (visa_acc.user_balance - old_balance) + new_amount
-        visa_acc.user_balance = round(new_balance, 2)
-        db.add(visa_acc)
+        apply_normal(old_account, old_amount, accounts, reverse=True)
 
-    for key, value in data.items():
-        setattr(revenue_item, key, value)
+    if new_category in TRANSFER_MAP:
+        new_target = TRANSFER_MAP[new_category]
+        apply_transfer(new_account, new_target, new_amount, accounts, reverse=False)
+    else:
+        apply_normal(new_account, new_amount, accounts, reverse=False)
+
+    revenue_item.transaction_type = request.transaction_type
+    revenue_item.description = request.description
+    revenue_item.expense_balance = new_amount
+    revenue_item.account_type = new_account
+    revenue_item.category = new_category
+
+    revenue_item.transaction_day = data['date'].day
+    revenue_item.transaction_month = data['date'].month
+    revenue_item.transaction_year = data['date'].year
+
+    for acc in accounts.values():
+        db.add(acc)
+
+    db.add(revenue_item)
+
     db.commit()
     db.refresh(revenue_item)
     return get_all_revenue(db, user_id)
 
 
 def delete_revenue_record(request:RecordBase, db:Session, user_id:int):
-    revenue_item=db.get(DbRevenue, request.id)
+    revenue_item=db.query(DbRevenue).filter(
+        DbRevenue.revenue_id == request.id,
+        DbRevenue.user_id == user_id
+    ).first()
     if not revenue_item:
         raise HTTPException(status_code=404, detail="Revenue record not found")
-    chequing_acc = db.query(DbAccount).filter(DbAccount.user_id == user_id,
-                                              DbAccount.description == "Chequing").first()
-    visa_acc = db.query(DbAccount).filter(DbAccount.user_id == user_id,
-                                          DbAccount.description == "Visa").first()
-    if revenue_item.category == 'chequing':
-        chequing_acc.user_balance = chequing_acc.user_balance- revenue_item.revenue_balance
-        db.add(chequing_acc)
+
+    accounts = {
+        "Chequing": db.query(DbAccount).filter_by(user_id=user_id, description="Chequing").first(),
+        "Visa": db.query(DbAccount).filter_by(user_id=user_id, description="Visa").first(),
+        "LineOfCredit": db.query(DbAccount).filter_by(user_id=user_id, description="LineOfCredit").first(),
+    }
+    old_account = revenue_item.account_type
+    old_category = revenue_item.category
+    old_amount = revenue_item.revenue_balance
+
+    if old_category in TRANSFER_MAP:
+        old_target = TRANSFER_MAP[old_category]
+        apply_transfer(old_account, old_target, old_amount, accounts, reverse=True)
+        db.add(accounts[old_target])
     else:
-        visa_acc.user_balance = visa_acc.user_balance - revenue_item.revenue_balance
-        db.add(visa_acc)
+        # print(accounts[old_account])
+        apply_normal(old_account, old_amount, accounts, reverse=True)
+    db.add(accounts[old_account])
     db.delete(revenue_item)
     db.commit()
     return get_all_revenue(db, user_id)

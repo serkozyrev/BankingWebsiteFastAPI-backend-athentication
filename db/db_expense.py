@@ -31,50 +31,23 @@ def add_expense(request: ExpenseBase, db: Session, user_id: int):
         account_type=request.account_type
     )
     db.add(expense_post)
-    chequing_acc = db.query(DbAccount).filter(DbAccount.user_id == user_id,
-                                              DbAccount.description == "Chequing").first()
-    visa_acc = db.query(DbAccount).filter(DbAccount.user_id == user_id,
-                                          DbAccount.description == "Visa").first()
-    line_of_credit_acc = db.query(DbAccount).filter(DbAccount.user_id == user_id,
-                                                    DbAccount.description == "LineOfCredit").first()
+    accounts = {
+        "Chequing": db.query(DbAccount).filter_by(user_id=user_id, description="Chequing").first(),
+        "Visa": db.query(DbAccount).filter_by(user_id=user_id, description="Visa").first(),
+        "LineOfCredit": db.query(DbAccount).filter_by(user_id=user_id, description="LineOfCredit").first(),
+    }
 
-    def add_sub_money(account, amount):
-        account.user_balance=account.user_balance+amount
-    if request.account_type == 'Chequing':
-        if request.category == 'transferToVisa':
-            add_sub_money(chequing_acc, -request.expense_balance)
-            add_sub_money(visa_acc, -request.expense_balance)
-        elif request.category == 'transferToLineOfCredit':
-            add_sub_money(chequing_acc, -request.expense_balance)
-            add_sub_money(line_of_credit_acc, -request.expense_balance)
-        else:
-            add_sub_money(chequing_acc, -request.expense_balance)
-        # print(chequing_acc.user_balance)
-        db.add(chequing_acc)
+    new_account = expense_post.account_type
+    new_category = expense_post.category
+    new_amount = expense_post.expense_balance
 
-    elif request.account_type == 'Visa':
-        if request.category == 'transferToChequing':
-            add_sub_money(visa_acc, request.expense_balance)
-            add_sub_money(chequing_acc, request.expense_balance)
-        elif request.category == 'transferToLineOfCredit':
-            add_sub_money(visa_acc, request.expense_balance)
-            add_sub_money(line_of_credit_acc, -request.expense_balance)
-        else:
-            add_sub_money(visa_acc, request.expense_balance)
-        db.add(visa_acc)
-
-    elif request.account_type == 'LineOfCredit':
-        if request.category == 'transferToChequing':
-            add_sub_money(line_of_credit_acc, request.expense_balance)
-            add_sub_money(chequing_acc, request.expense_balance)
-        elif request.category == 'transferToVisa':
-            add_sub_money(visa_acc, -request.expense_balance)
-            add_sub_money(line_of_credit_acc, request.expense_balance)
-        else:
-            add_sub_money(line_of_credit_acc, request.expense_balance)
-        db.add(line_of_credit_acc)
+    if new_category in TRANSFER_MAP:
+        new_target = TRANSFER_MAP[new_category]
+        apply_transfer(new_account, new_target, new_amount, accounts, reverse=False)
+        db.add(accounts[new_target])
     else:
-        raise HTTPException(status_code=400, detail="Invalid account type")
+        add_sub_money(accounts[new_account], new_amount)
+    db.add(accounts[new_account])
 
     db.commit()
     db.refresh(expense_post) #'account_info':account_info
@@ -245,33 +218,7 @@ def copy_record(request:RecordBase, db:Session, user_id:int):
         db.add(accounts[new_target])
     else:
         apply_normal(new_account, new_amount, accounts, reverse=False)
-    # if expense_record.account_type == 'Chequing':
-    #     chequing_acc = db.query(DbAccount).filter(DbAccount.user_id == user_id,
-    #                                               DbAccount.description == "Chequing").first()
-    #     if not chequing_acc:
-    #         raise HTTPException(status_code=404, detail="Chequing not found")
-    #
-    #     new_balance=chequing_acc.user_balance- expense_record.expense_balance
-    #     chequing_acc.user_balance=round(new_balance,2)
-    #     db.add(chequing_acc)
-    # elif expense_record.account_type == 'Visa':
-    #     visa_acc = db.query(DbAccount).filter(DbAccount.user_id == user_id,
-    #                                           DbAccount.description == "Visa").first()
-    #     if not visa_acc:
-    #         raise HTTPException(status_code=404, detail="Visa account not found")
-    # 
-    #     new_balance = visa_acc.user_balance + expense_record.expense_balance
-    #     visa_acc.user_balance = round(new_balance, 2)
-    #     db.add(visa_acc)
-    # elif expense_record.account_type == 'LineOfCredit':
-    #     line_of_credit_acc = db.query(DbAccount).filter(DbAccount.user_id == user_id,
-    #                                                     DbAccount.description == "LineOfCredit").first()
-    #     if not line_of_credit_acc:
-    #         raise HTTPException(status_code=404, detail="Visa account not found")
-    #
-    #     new_balance = line_of_credit_acc.user_balance + expense_record.expense_balance
-    #     line_of_credit_acc.user_balance = round(new_balance, 2)
-    #     db.add(line_of_credit_acc)
+
     db.add(accounts[new_account])
     db.commit() #'account_info':account_info
     db.refresh(expense_post)

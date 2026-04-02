@@ -52,4 +52,5 @@ class DbRevenue(Base):
     transaction_year = Column(String)
     category = Column(String)
     transaction_type = Column(String)
+    account_type = Column(String)
     user = relationship("DbUser", back_populates="revenues")

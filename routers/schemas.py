@@ -92,9 +92,8 @@ class SearchRecord(BaseModel):
     description: str
 
 class AgentDisplay(BaseModel):
-    intent:str
     transaction_type:str
-    amount:Decimal
+    expense_balance:Decimal
     description:str
     date:date
     account_type:str

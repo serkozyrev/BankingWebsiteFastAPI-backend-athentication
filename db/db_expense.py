@@ -13,7 +13,7 @@ from helpers import information
 
 def add_expense(request: ExpenseBase, db: Session, user_id: int):
     # print(request)
-
+    print('request', request)
     request_date=request.date
     day=request_date.day
     month=request_date.month
@@ -46,7 +46,7 @@ def add_expense(request: ExpenseBase, db: Session, user_id: int):
         apply_transfer(new_account, new_target, new_amount, accounts, reverse=False)
         db.add(accounts[new_target])
     else:
-        add_sub_money(accounts[new_account], new_amount)
+        apply_normal(new_account, new_amount, accounts,expense_post.transaction_type, reverse=False)
     db.add(accounts[new_account])
 
     db.commit()
@@ -61,13 +61,21 @@ def get_all_expense(db: Session, user_id: int):
                         desc(cast(DbExpense.transaction_month, Integer)),
                         desc(cast(DbExpense.transaction_day,Integer))
                     ).all())
-    expenses_chequing_line_of_credit = (db.query(DbExpense).
-                     filter(DbExpense.user_id == user_id,DbExpense.account_type.in_(['Chequing','LineOfCredit']))
+    expenses_chequing = (db.query(DbExpense).
+                     filter(DbExpense.user_id == user_id,DbExpense.account_type.in_(['Chequing']))
                      .order_by(
                         desc(cast(DbExpense.transaction_year, Integer)),
                         desc(cast(DbExpense.transaction_month, Integer)),
                         desc(cast(DbExpense.transaction_day, Integer))
                     ).all())
+    expenses_line_of_credit = (db.query(DbExpense).
+                    filter(DbExpense.user_id == user_id,
+                           DbExpense.account_type.in_(['LineOfCredit']))
+                    .order_by(
+                    desc(cast(DbExpense.transaction_year, Integer)),
+                    desc(cast(DbExpense.transaction_month, Integer)),
+                    desc(cast(DbExpense.transaction_day, Integer))
+    ).all())
     expenses_list_visa=[
         {
             'id': expense.expense_id,
@@ -83,7 +91,7 @@ def get_all_expense(db: Session, user_id: int):
         }
         for expense in expenses_visa
     ]
-    expenses_list_chequing_line_of_credit = [
+    expenses_list_chequing = [
         {
             'id': expense.expense_id,
             'description': expense.description,
@@ -96,7 +104,23 @@ def get_all_expense(db: Session, user_id: int):
             'type': expense.transaction_type,
             'amountindollar': expense.amount_in_dollars
         }
-        for expense in expenses_chequing_line_of_credit
+        for expense in expenses_chequing
+    ]
+
+    expenses_list_line_of_credit = [
+        {
+            'id': expense.expense_id,
+            'description': expense.description,
+            'amount': expense.expense_balance,
+            'day': expense.transaction_day,
+            'month': expense.transaction_month,
+            'year': expense.transaction_year,
+            'category': expense.category,
+            'accountType': expense.account_type,
+            'type': expense.transaction_type,
+            'amountindollar': expense.amount_in_dollars
+        }
+        for expense in expenses_line_of_credit
     ]
     # print(expenses_list_chequing_line_of_credit)
     current_month=str(datetime.date.today().month)
@@ -117,7 +141,8 @@ def get_all_expense(db: Session, user_id: int):
     # print(expenses_list_visa)
     account_info=information.collect_information(db,user_id)
     return {'message': 'Record Saved Successfully', 'expensesVisa':expenses_list_visa,
-            'expensesChequingLineOfCredit': expenses_list_chequing_line_of_credit,
+            'expensesChequing': expenses_list_chequing,
+            'expensesLineOfCredit': expenses_list_line_of_credit,
             'totalChequing':chequing_sum, 'totalVisa':visa_sum,
             'totalLineOfCredit':line_of_credit_sum, 'account_info':account_info}
 
@@ -132,20 +157,23 @@ def add_sub_money(account, amount):
     account.user_balance = round(account.user_balance + amount, 2)
 
 
-def apply_normal(account_name, amount, accounts, reverse=False):
+def apply_normal(account_name, amount, accounts, transaction_type=None, reverse=False):
     acc = accounts[account_name]
 
-    if account_name == "Chequing":
-        delta = -amount      # expense reduces cash
+    if transaction_type == "revenue":
+        delta=amount
     else:
-        delta = amount     # expense increases debt
-
-    if reverse:
         if account_name == "Chequing":
-            print('test')
-            delta = amount
+            delta = -amount      # expense reduces cash
         else:
-            delta = -amount
+            delta = amount     # expense increases debt
+
+        if reverse:
+            if account_name == "Chequing":
+                print('test')
+                delta = amount
+            else:
+                delta = -amount
 
     add_sub_money(acc, delta)
 
@@ -217,7 +245,7 @@ def copy_record(request:RecordBase, db:Session, user_id:int):
         apply_transfer(new_account, new_target, new_amount, accounts, reverse=False)
         db.add(accounts[new_target])
     else:
-        apply_normal(new_account, new_amount, accounts, reverse=False)
+        apply_normal(new_account, new_amount, accounts, expense_record.transaction_type, reverse=False)
 
     db.add(accounts[new_account])
     db.commit() #'account_info':account_info
@@ -247,18 +275,19 @@ def edit_expense_record(request:EditExpenseRecord, db:Session, user_id:int):
     new_account = data['account_type']
     new_category = data['category']
     new_amount = data['expense_balance']
+    new_transaction_type= data['transaction_type']
 
     if old_category in TRANSFER_MAP:
         old_target = TRANSFER_MAP[old_category]
         apply_transfer(old_account, old_target, old_amount, accounts, reverse=True)
     else:
-        apply_normal(old_account, old_amount, accounts, reverse=True)
+        apply_normal(old_account, old_amount, accounts,expense_item.transaction_type, reverse=True)
 
     if new_category in TRANSFER_MAP:
         new_target = TRANSFER_MAP[new_category]
         apply_transfer(new_account, new_target, new_amount, accounts, reverse=False)
     else:
-        apply_normal(new_account, new_amount, accounts, reverse=False)
+        apply_normal(new_account, new_amount, accounts,new_transaction_type, reverse=False)
 
     expense_item.transaction_type = request.transaction_type
     expense_item.description = request.description
@@ -295,6 +324,7 @@ def delete_expense_record(request:RecordBase, db:Session, user_id:int):
     old_account = expense_item.account_type
     old_category = expense_item.category
     old_amount = expense_item.expense_balance
+    old_transaction_type = expense_item.transaction_type
 
     if old_category in TRANSFER_MAP:
         old_target = TRANSFER_MAP[old_category]
@@ -302,7 +332,7 @@ def delete_expense_record(request:RecordBase, db:Session, user_id:int):
         db.add(accounts[old_target])
     else:
         # print(accounts[old_account])
-        apply_normal(old_account, old_amount, accounts, reverse=True)
+        apply_normal(old_account, old_amount, accounts, old_transaction_type, reverse=True)
     # if expense_item.account_type == 'Chequing':
     #     db.add(accounts[old_account])
     # elif expense_item.account_type == 'LineOfCredit':

@@ -16,6 +16,6 @@ router = APIRouter(
 )
 
 @router.post('/parse-entry', response_model=AgentDisplay)
-async def parse_entry(request: AgentRequestBase, db: Session = Depends(get_db), current_user:UserAuth=Depends(get_current_user)):
-    result= await db_aiagent.parse_entry_with_ai(request, db, current_user)
+async def parse_entry(request: AgentRequestBase, db: Session = Depends(get_db)):
+    result= await db_aiagent.parse_entry_with_ai(request, db)
     return result

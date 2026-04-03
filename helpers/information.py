@@ -25,7 +25,8 @@ def get_by_id_info(request:RecordBase, db:Session):
                 'month': transaction_by_id.transaction_month,
                 'year': transaction_by_id.transaction_year,
                 'category': transaction_by_id.category,
-                'type': request.type
+                'type': request.type,
+                'accountType': transaction_by_id.account_type
             }
 
         return {'revenue': revenues_item}

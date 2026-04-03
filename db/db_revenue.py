@@ -100,34 +100,6 @@ def add_revenue(request: RevenueBase, db: Session, user_id: int):
     else:
         add_sub_money(accounts[new_account], new_amount)
     db.add(accounts[new_account])
-    # if request.category == 'chequing':
-    #     chequing_acc = db.query(DbAccount).filter(DbAccount.user_id == user_id,
-    #                                               DbAccount.description == "Chequing").first()
-    #     if not chequing_acc:
-    #         raise HTTPException(status_code=404, detail="Chequing not found")
-    #
-    #     new_balance=chequing_acc.user_balance+ request.revenue_balance
-    #     chequing_acc.user_balance=round(new_balance,2)
-    #     print(chequing_acc.user_balance)
-    #     db.add(chequing_acc)
-    # elif request.category == 'visa':
-    #     visa_acc = db.query(DbAccount).filter(DbAccount.user_id == user_id,
-    #                                           DbAccount.description == "Visa").first()
-    #     if not visa_acc:
-    #         raise HTTPException(status_code=404, detail="Visa account not found")
-    #
-    #     new_balance = visa_acc.user_balance + request.revenue_balance
-    #     visa_acc.user_balance = round(new_balance, 2)
-    #     db.add(visa_acc)
-    # elif request.category == 'lineofcredit':
-    #     line_of_credit_acc = db.query(DbAccount).filter(DbAccount.user_id == user_id,
-    #                                                     DbAccount.description == "LineOfCredit").first()
-    #     if not line_of_credit_acc:
-    #         raise HTTPException(status_code=404, detail="Visa account not found")
-    #
-    #     new_balance = line_of_credit_acc.user_balance + request.revenue_balance
-    #     line_of_credit_acc.user_balance = round(new_balance, 2)
-    #     db.add(line_of_credit_acc)
 
     db.commit()
     db.refresh(revenue_post) #'account_info':account_info
@@ -160,7 +132,7 @@ def copy_record(request:RecordBase, db:Session, user_id: int):
     year = date.year
 
     revenue_record=db.query(DbRevenue).filter(
-        DbRevenue.expense_id == request.id,
+        DbRevenue.revenue_id == request.id,
         DbRevenue.user_id == user_id
     ).first()
     if revenue_record is None:
@@ -187,7 +159,7 @@ def copy_record(request:RecordBase, db:Session, user_id: int):
 
     new_account = revenue_post.account_type
     new_category = revenue_post.category
-    new_amount = revenue_post.expense_balance
+    new_amount = revenue_post.revenue_balance
     if new_category in TRANSFER_MAP:
         new_target = TRANSFER_MAP[new_category]
         apply_transfer(new_account, new_target, new_amount, accounts, reverse=False)

@@ -19,7 +19,7 @@ router = APIRouter(
 @router.get('')
 def analytics_info(db: Session = Depends(get_db), current_user:UserAuth=Depends(get_current_user)):
 
-    info_chequing_line_of_credit=db_analytics.analytics_expense(db, current_user.user_id, ['Chequing', 'LineOfCredit'])
+    info_chequing=db_analytics.analytics_expense(db, current_user.user_id, ['Chequing'])
     info_visa=db_analytics.analytics_expense(db, current_user.user_id, ['Visa'])
-    info_revenue=db_analytics.analytics_revenue(db, current_user.user_id, ['Chequing', 'LineOfCredit', 'Visa'])
-    return{'infoChequingLineOfCredit': info_chequing_line_of_credit, 'infoVisa': info_visa, 'infoRevenue': info_revenue}
+    info_line_of_credit=db_analytics.analytics_expense(db, current_user.user_id, ['LineOfCredit'])
+    return{'infoChequing': info_chequing, 'infoVisa': info_visa, 'infoLineOfCredit': info_line_of_credit}

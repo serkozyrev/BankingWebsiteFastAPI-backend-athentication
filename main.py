@@ -10,7 +10,7 @@ from auth import authentication
 
 from db.database import engine, get_db
 from db import models
-from routers import revenue, expense, analytics, user, aiAgent
+from routers import revenue, expense, analytics, user, aiAgent, categories
 from routers.schemas import RecordBase, SearchRecord
 
 app = FastAPI()
@@ -49,6 +49,7 @@ def search(request:SearchRecord,db:Session=Depends(get_db)):
 app.include_router(user.router)
 app.include_router(authentication.router)
 app.include_router(aiAgent.router)
+app.include_router(categories.router)
 app.include_router(expense.router)
 app.include_router(revenue.router)
 app.include_router(analytics.router)

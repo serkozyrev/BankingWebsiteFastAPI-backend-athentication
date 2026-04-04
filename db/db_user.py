@@ -3,7 +3,7 @@ from http.client import HTTPException
 from sqlalchemy.orm import Session
 
 from db.hash import Hash
-from db.models import DbUser, DbAccount
+from db.models import DbUser, DbAccount, DbCategories
 from routers.schemas import UserBase
 from fastapi import HTTPException, status
 
@@ -11,10 +11,7 @@ from fastapi import HTTPException, status
 def create_user(db:Session, request:UserBase):
     existing_user = db.query(DbUser).filter(DbUser.email == request.email).first()
     if existing_user:
-        raise HTTPException(
-            status_code=400,
-            detail="User with this email already exists"
-        )
+        raise HTTPException(status_code=400, detail="User already exists")
     new_user = DbUser(
         username=request.username,
         email=request.email,
@@ -30,8 +27,10 @@ def create_user(db:Session, request:UserBase):
         DbAccount(user_id=new_user.user_id, description="Chequing", user_balance=0),
         DbAccount(user_id=new_user.user_id, description="LineOfCredit", user_balance=0),
     ]
+    default_category=DbCategories(user_id=new_user.user_id, description="Other", category_name="other")
 
     db.add_all(default_accounts)
+    db.add(default_category)
     db.commit()
     return new_user
 

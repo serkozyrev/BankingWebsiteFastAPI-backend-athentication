@@ -101,3 +101,7 @@ class AgentDisplay(BaseModel):
 
 class AgentRequestBase(BaseModel):
     description: str
+
+class CategoryBase(BaseModel):
+    category_name: str
+    description: str

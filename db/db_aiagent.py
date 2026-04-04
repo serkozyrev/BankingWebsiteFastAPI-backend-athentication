@@ -17,9 +17,12 @@ Response only in JSON format without additional explanations. Today's date is {t
 if user types something like "today", "today's date", "today date", use {today_str} exactly.
 There will be two transaction types income and expense.
 Transfers of money between accounts will be a part of transfer type and have categories 
-like transferToVisa, transferToLineOfCredit or transferToChequing, grocery, utilitiesPayment, otherPayment, medicine. The system has three account types 
+like transferToVisa, transferToLineOfCredit, transferToChequing, grocery, utilitiesPayment, otherPayment, medicine,
+"condoFee", "propertyTax", "enercare", "enbridge", "hydro", "water", "carInsurance", "cellPhoneExpenses", "rrsp",
+"bankCharges", "officeSupplies", "homeExpenses", "catExpenses", "computerExpenses", "clothes". The system has three account types 
 like Chequing, Visa and LineOfCredit. if you see something like salary, hst refund, wage or deposit, put revenue as transaction type.
-Date should come in the format yyyy-mm-dd. Description field can be generate from the user input. If you see extra words convert them in description if needed or remove.
+Date should come in the format yyyy-mm-dd. Description field can be generate from the user input.
+If you see extra words convert them in description if needed or remove.
 If the language is Russian, translate it in terms of financial terms based on previous requirements for JSON format.
 
 Format:

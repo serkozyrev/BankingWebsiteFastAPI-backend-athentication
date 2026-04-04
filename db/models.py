@@ -16,6 +16,7 @@ class DbUser(Base):
     accounts = relationship("DbAccount", back_populates="user", cascade="all, delete-orphan")
     expenses = relationship("DbExpense", back_populates="user", cascade="all, delete-orphan")
     revenues = relationship("DbRevenue", back_populates="user", cascade="all, delete-orphan")
+    categories=relationship("DbCategories", back_populates="user", cascade="all, delete-orphan")
 
 class DbAccount(Base):
     __tablename__ = "account"
@@ -54,3 +55,11 @@ class DbRevenue(Base):
     transaction_type = Column(String)
     account_type = Column(String)
     user = relationship("DbUser", back_populates="revenues")
+
+class DbCategories(Base):
+    __tablename__ = "categories"
+    category_id = Column(Integer, primary_key=True, autoincrement=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False, index=True)
+    category_name = Column(String, nullable=False)
+    description = Column(String, nullable=False)
+    user=relationship("DbUser", back_populates="categories")

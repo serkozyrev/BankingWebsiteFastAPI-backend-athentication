@@ -13,3 +13,4 @@ argon2-cffi
 passlib
 pydantic[email]
 openai
+google-genai

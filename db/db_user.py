@@ -27,7 +27,9 @@ def create_user(db:Session, request:UserBase):
         DbAccount(user_id=new_user.user_id, description="Chequing", user_balance=0),
         DbAccount(user_id=new_user.user_id, description="LineOfCredit", user_balance=0),
     ]
-    default_category=DbCategories(user_id=new_user.user_id, description="Other", category_name="other")
+    default_category=[
+                    DbCategories(user_id=new_user.user_id, description="Other", category_name="other")
+    ]
 
     db.add_all(default_accounts)
     db.add(default_category)

@@ -7,38 +7,49 @@ from sqlalchemy import cast, desc, Integer, select, func
 
 from routers.schemas import Analytics
 from sqlalchemy.orm import Session
-from db.models import DbExpense, DbAccount, DbRevenue
+from db.models import DbExpense, DbAccount, DbRevenue, DbCategories
 import datetime
 
 def analytics_expense(db: Session, user_id:int, account_types:list[str]):
+    categories = db.query(DbCategories).filter(DbCategories.user_id == user_id).all()
+    category_titles ={
+        **{
+        category.category_name:category.description
+        for category in categories
+        },
+        "transferLineOfCredit": "Transfer to Line of Credit",
+        "transferToChequing":"Transfer to Chequing",
+        "transferToVisa":"Transfer to Visa",
+    }
+    print(category_titles)
     info_list=[]
     yearly_summary = []
     current_month=str(datetime.date.today().month)
     # category_list = ['grocery', 'transferToVisa', 'utilitiesPayment', 'otherPayment', 'transferLineOfCredit', 'transferToChequing', 'medicine']
-    category_titles = {
-        "transferLineOfCredit":"Transfer to Line of Credit",
-        "transferToChequing":"Transfer to Chequing",
-        "transferToVisa":"Transfer to Visa",
-        "utilitiesPayment": "Utilities",
-        "otherPayment": "Other Payment",
-        "medicine": "Medicine",
-        "grocery": "Grocery",
-        "condoFee":"Condo Fee",
-        "propertyTax": "Property Tax",
-        "enercare":"Enercare",
-        "enbridge":"Enbridge",
-        "hydro":"Hydro",
-        "water":"Water",
-        "carInsurance":"Car Insurance",
-        "cellPhoneExpenses":"Cell Phone Expenses",
-        "rrsp":"RRSP",
-        "bankCharges":"Bank Charges",
-        "officeSupplies":"Office Supplies",
-        "homeExpenses":"Home Expenses",
-        "catExpenses":"Cat Expenses",
-        "computerExpenses":"Computer Expenses",
-        "clothes": "Clothes"
-    }
+    # category_titles = {
+    #     "transferLineOfCredit":"Transfer to Line of Credit",
+    #     "transferToChequing":"Transfer to Chequing",
+    #     "transferToVisa":"Transfer to Visa",
+    #     "utilitiesPayment": "Utilities",
+    #     "otherPayment": "Other Payment",
+    #     "medicine": "Medicine",
+    #     "grocery": "Grocery",
+    #     "condoFee":"Condo Fee",
+    #     "propertyTax": "Property Tax",
+    #     "enercare":"Enercare",
+    #     "enbridge":"Enbridge",
+    #     "hydro":"Hydro",
+    #     "water":"Water",
+    #     "carInsurance":"Car Insurance",
+    #     "cellPhoneExpenses":"Cell Phone Expenses",
+    #     "rrsp":"RRSP",
+    #     "bankCharges":"Bank Charges",
+    #     "officeSupplies":"Office Supplies",
+    #     "homeExpenses":"Home Expenses",
+    #     "catExpenses":"Cat Expenses",
+    #     "computerExpenses":"Computer Expenses",
+    #     "clothes": "Clothes"
+    # }
 
     information = (
         db.query(

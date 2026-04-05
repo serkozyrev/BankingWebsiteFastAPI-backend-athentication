@@ -1,3 +1,4 @@
+from fastapi import HTTPException
 from sqlalchemy import desc,cast, Integer,func
 
 from routers.schemas import RecordBase, SearchRecord
@@ -17,6 +18,8 @@ def collect_information(db:Session, user_id:int):
 def get_by_id_info(request:RecordBase, db:Session):
     if request.type =='revenue':
         transaction_by_id=db.query(DbRevenue).filter(DbRevenue.revenue_id==request.id).first()
+        if not transaction_by_id:
+            raise HTTPException(status_code=404, detail="Revenue not found")
         revenues_item = {
                 'id': transaction_by_id.revenue_id,
                 'description': transaction_by_id.description,
@@ -32,6 +35,8 @@ def get_by_id_info(request:RecordBase, db:Session):
         return {'revenue': revenues_item}
     elif request.type =='expense':
         transaction_by_id=db.query(DbExpense).filter(DbExpense.expense_id==request.id).first()
+        if not transaction_by_id:
+            raise HTTPException(status_code=404, detail="Revenue not found")
         expense_item = {
                 'id': transaction_by_id.expense_id,
                 'description': transaction_by_id.description,
@@ -63,6 +68,7 @@ def search(request:SearchRecord,db:Session):
 
     expenses_list = []
     expenses_list_visa = []
+    expenses_list_chequing = []
     for record in result:
         if record.account_type == 'Visa':
             new_expense_visa={
@@ -71,6 +77,14 @@ def search(request:SearchRecord,db:Session):
                 'amountindollars': record.amount_in_dollars, 'category': record.category, 'type': record.transaction_type
             }
             expenses_list_visa.append(new_expense_visa)
+        elif record.account_type == 'Chequing':
+            new_expense_chequing = {
+                'id': record.expense_id, 'description': record.description, 'amount': record.expense_balance,
+                'day': record.transaction_day, 'month': record.transaction_month, 'year': record.transaction_year,
+                'amountindollars': record.amount_in_dollars, 'category': record.category,
+                'type': record.transaction_type
+            }
+            expenses_list_chequing.append(new_expense_chequing)
         else:
             new_expense={
                 'id': record.expense_id, 'description': record.description, 'amount': record.expense_balance,
@@ -79,4 +93,4 @@ def search(request:SearchRecord,db:Session):
             }
             expenses_list.append(new_expense)
 
-    return {'expensesListVisa': expenses_list_visa, 'expensesList': expenses_list}
+    return {'expensesListVisa': expenses_list_visa, 'expensesList': expenses_list, 'expenseListCheqing': expenses_list_chequing}

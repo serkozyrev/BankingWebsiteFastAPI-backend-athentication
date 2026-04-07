@@ -113,4 +113,4 @@ class CategoryDisplay(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 class CategoryRecordBase(BaseModel):
-    category_id:int
+    category_id:list[int]

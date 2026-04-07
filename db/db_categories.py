@@ -45,9 +45,10 @@ def get_all_categories(db:Session, user_id:int):
     return db.query(DbCategories).filter(DbCategories.user_id == user_id).all()
 
 def delete_category_record(request:CategoryRecordBase, db:Session, user_id:int):
-    existing_category = db.query(DbCategories).filter(DbCategories.user_id == user_id,
-                                                      DbCategories.category_name == request.category_name).first()
-    if existing_category:
-        db.delete(existing_category)
-        db.commit()
+    for record in request.category_id:
+        existing_category = db.query(DbCategories).filter(DbCategories.user_id == user_id,
+                                                          DbCategories.category_id == record).first()
+        if existing_category:
+            db.delete(existing_category)
+    db.commit()
     return {'message': 'Record Deleted Successfully'}

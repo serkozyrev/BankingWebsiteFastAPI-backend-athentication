@@ -29,7 +29,7 @@ def add_category(request:CategoryBase, db:Session, user_id:int):
     return {'message': 'Record Saved Successfully', 'category':new_category.category_name}
 
 def get_all_categories(db:Session, user_id:int):
-    all_categories_by_user= db.query(DbCategories).filter(DbCategories.user_id == user_id).all()
+    all_categories_by_user= db.query(DbCategories).filter(DbCategories.user_id == user_id).order_by(DbCategories.category_name).all()
     # expenses_list_line_of_credit = [
     #     {
     #         'category_id': category.category_id,
@@ -42,7 +42,7 @@ def get_all_categories(db:Session, user_id:int):
     for category in all_categories_by_user:
         print(category)
     # return {'categories':all_categories_by_user}
-    return db.query(DbCategories).filter(DbCategories.user_id == user_id).all()
+    return db.query(DbCategories).filter(DbCategories.user_id == user_id).order_by(DbCategories.category_name).all()
 
 def delete_category_record(request:CategoryRecordBase, db:Session, user_id:int):
     for record in request.category_id:

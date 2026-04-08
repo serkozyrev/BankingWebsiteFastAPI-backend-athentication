@@ -39,8 +39,8 @@ def get_all_categories(db:Session, user_id:int):
     #     for category in all_categories_by_user
     # ]
 
-    for category in all_categories_by_user:
-        print(category)
+    # for category in all_categories_by_user:
+    #     print(category)
     # return {'categories':all_categories_by_user}
     return db.query(DbCategories).filter(DbCategories.user_id == user_id).order_by(DbCategories.category_name).all()
 

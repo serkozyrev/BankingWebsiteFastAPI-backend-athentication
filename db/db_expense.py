@@ -1,6 +1,6 @@
 import string, random, shutil
 
-from fastapi import HTTPException, status
+from fastapi import HTTPException, status, Query
 from decimal import Decimal
 from sqlalchemy import cast, desc, Integer, select, func
 from sqlalchemy.testing.pickleable import User
@@ -53,29 +53,35 @@ def add_expense(request: ExpenseBase, db: Session, user_id: int):
     db.refresh(expense_post) #'account_info':account_info
     return get_all_expense(db, user_id)
 
-def get_all_expense(db: Session, user_id: int):
-    expenses_visa = (db.query(DbExpense).
-                     where(DbExpense.user_id == user_id,DbExpense.account_type=='Visa')
+def get_all_expense(db: Session, user_id: int, page:int = 1, limit:int=10):
+    offset = (page - 1) * limit
+    expenses_visa_base = db.query(DbExpense).where(DbExpense.user_id == user_id,DbExpense.account_type=='Visa')
+    total_records_visa = expenses_visa_base.count()
+    expenses_visa=(expenses_visa_base
                      .order_by(
                         desc(cast(DbExpense.transaction_year, Integer)),
                         desc(cast(DbExpense.transaction_month, Integer)),
                         desc(cast(DbExpense.transaction_day,Integer))
-                    ).all())
-    expenses_chequing = (db.query(DbExpense).
-                     filter(DbExpense.user_id == user_id,DbExpense.account_type.in_(['Chequing']))
+                    ).offset(offset).limit(limit).all())
+    expenses_chequing_base = (db.query(DbExpense).
+                     filter(DbExpense.user_id == user_id,DbExpense.account_type.in_(['Chequing'])))
+    total_records_chequing = expenses_chequing_base.count()
+    expenses_chequing=(expenses_chequing_base
                      .order_by(
                         desc(cast(DbExpense.transaction_year, Integer)),
                         desc(cast(DbExpense.transaction_month, Integer)),
                         desc(cast(DbExpense.transaction_day, Integer))
-                    ).all())
-    expenses_line_of_credit = (db.query(DbExpense).
+                    ).offset(offset).limit(limit).all())
+    expenses_line_of_credit_base = (db.query(DbExpense).
                     filter(DbExpense.user_id == user_id,
-                           DbExpense.account_type.in_(['LineOfCredit']))
+                           DbExpense.account_type.in_(['LineOfCredit'])))
+    total_records_line_of_credit = expenses_line_of_credit_base.count()
+    expenses_line_of_credit=(expenses_line_of_credit_base
                     .order_by(
-                    desc(cast(DbExpense.transaction_year, Integer)),
-                    desc(cast(DbExpense.transaction_month, Integer)),
-                    desc(cast(DbExpense.transaction_day, Integer))
-    ).all())
+                        desc(cast(DbExpense.transaction_year, Integer)),
+                        desc(cast(DbExpense.transaction_month, Integer)),
+                        desc(cast(DbExpense.transaction_day, Integer))
+                    ).offset(offset).limit(limit).all())
     expenses_list_visa=[
         {
             'id': expense.expense_id,
@@ -144,7 +150,10 @@ def get_all_expense(db: Session, user_id: int):
             'expensesChequing': expenses_list_chequing,
             'expensesLineOfCredit': expenses_list_line_of_credit,
             'totalChequing':chequing_sum, 'totalVisa':visa_sum,
-            'totalLineOfCredit':line_of_credit_sum, 'account_info':account_info}
+            'totalLineOfCredit':line_of_credit_sum, 'account_info':account_info, 'totalVisaRecords': total_records_visa,
+            'totalChequingRecords': total_records_chequing, 'totalLineOfCreditRecords': total_records_line_of_credit,
+            'page':page, 'limit':limit, 'TotalVisaPages':(total_records_visa+limit-1)//limit,
+            'TotalChequingPages':(total_records_chequing+limit-1)//limit, 'TotalLineOfCreditPages':(total_records_line_of_credit+limit-1)//limit}
 
 
 TRANSFER_MAP = {

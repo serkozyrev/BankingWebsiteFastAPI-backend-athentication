@@ -11,11 +11,8 @@ load_dotenv()
 client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
 today_str = date.today().isoformat()
 
-from routers.schemas import RevenueBase, RecordBase, EditRevenueRecord, AgentRequestBase
+from routers.schemas import RecordBase, AgentRequestBase
 from sqlalchemy.orm import Session
-from db.models import DbRevenue, DbAccount
-import datetime
-from helpers import information
 
 
 async def parse_entry_with_ai(request: AgentRequestBase, db:Session, user_id:int):

@@ -8,9 +8,10 @@ from sqlalchemy.orm import Session
 from helpers import information
 from auth import authentication
 
+from auth.oAuth2 import get_current_user
 from db.database import engine, get_db
 from db import models
-from routers import revenue, expense, analytics, user, aiAgent, categories
+from routers import expense, analytics, user, aiAgent, categories, account
 from routers.schemas import RecordBase, SearchRecord
 
 app = FastAPI()
@@ -40,18 +41,18 @@ async def add_middleware(request: Request, call_next):
     return response
 
 @app.post("/getbyid")
-def get_by_id(request:RecordBase,db:Session=Depends(get_db)):
-    return information.get_by_id_info(request, db)
+def get_by_id(request:RecordBase,db:Session=Depends(get_db), current_user:UserAuth=Depends(get_current_user)):
+    return information.get_by_id_info(request, db, current_user.user_id)
 
 @app.post("/search")
-def search(request:SearchRecord,db:Session=Depends(get_db)):
-    return information.search(request, db)
+def search(request:SearchRecord,db:Session=Depends(get_db), current_user:UserAuth=Depends(get_current_user)):
+    return information.search(request, db, current_user.user_id)
 app.include_router(user.router)
+app.include_router(account.router)
 app.include_router(authentication.router)
 app.include_router(aiAgent.router)
 app.include_router(categories.router)
 app.include_router(expense.router)
-app.include_router(revenue.router)
 app.include_router(analytics.router)
 
 models.Base.metadata.create_all(engine)
@@ -68,15 +69,3 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"]
 )
-# app = CORSMiddleware(
-#     app=app,
-#     allow_origins=[
-#         "http://localhost:3000",
-#         "http://localhost:3001",
-#         "https://ankingebsiteast-backend-serkozyrev704-yir4fj36.leapcell.dev",
-#         "https://banking-website-for-home.netlify.app"
-#     ],
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )

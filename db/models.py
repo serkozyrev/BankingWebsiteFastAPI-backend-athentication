@@ -15,51 +15,58 @@ class DbUser(Base):
 
     accounts = relationship("DbAccount", back_populates="user", cascade="all, delete-orphan")
     expenses = relationship("DbExpense", back_populates="user", cascade="all, delete-orphan")
-    revenues = relationship("DbRevenue", back_populates="user", cascade="all, delete-orphan")
-    categories=relationship("DbCategories", back_populates="user", cascade="all, delete-orphan")
+    categories = relationship("DbCategories", back_populates="user", cascade="all, delete-orphan")
+
 
 class DbAccount(Base):
     __tablename__ = "account"
+
     account_id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False, index=True)
     user_balance = Column(Numeric(12, 2), nullable=False, default=0)
-    description = Column(String)
+    description = Column(String, nullable=False)
+    account_kind = Column(String, nullable=False)  # e.g. asset, debt
+
     user = relationship("DbUser", back_populates="accounts")
+    expenses = relationship("DbExpense", foreign_keys="DbExpense.account_id", back_populates="account", cascade="all, delete-orphan")
+
+    # records where this account is the transfer destination
+    incoming_transfers = relationship("DbExpense", foreign_keys="DbExpense.target_account_id", back_populates="target_account")
 
 
 class DbExpense(Base):
     __tablename__ = "expense"
+
     expense_id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False, index=True)
+    account_id = Column(Integer, ForeignKey("account.account_id", ondelete="CASCADE"), nullable=False, index=True)
+    target_account_id = Column(Integer, ForeignKey("account.account_id"), nullable=True)
+
     description = Column(String)
     expense_balance = Column(Numeric(12, 2), nullable=False)
     transaction_day = Column(String)
     transaction_month = Column(String)
     transaction_year = Column(String)
-    amount_in_dollars = Column(Numeric(12,2))
+    amount_in_dollars = Column(Numeric(12, 2))
     category = Column(String)
     transaction_type = Column(String)
-    account_type = Column(String)
-    user = relationship("DbUser", back_populates="expenses")
 
-class DbRevenue(Base):
-    __tablename__ = "revenue"
-    revenue_id = Column(Integer, primary_key=True, autoincrement=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False, index=True)
-    description = Column(String, nullable=False)
-    revenue_balance = Column(Numeric(12,2), nullable=False)
-    transaction_day = Column(String)
-    transaction_month = Column(String)
-    transaction_year = Column(String)
-    category = Column(String)
-    transaction_type = Column(String)
+    # temporary only if old code still needs it
     account_type = Column(String)
-    user = relationship("DbUser", back_populates="revenues")
+
+    user = relationship("DbUser", back_populates="expenses")
+    account = relationship("DbAccount", foreign_keys=[account_id], back_populates="expenses")
+
+    # destination account for transfer
+    target_account = relationship("DbAccount", foreign_keys=[target_account_id], back_populates="incoming_transfers")
+
 
 class DbCategories(Base):
     __tablename__ = "categories"
+
     category_id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     user_id = Column(Integer, ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False, index=True)
     category_name = Column(String, nullable=False)
     description = Column(String, nullable=False)
-    user=relationship("DbUser", back_populates="categories")
+
+    user = relationship("DbUser", back_populates="categories")

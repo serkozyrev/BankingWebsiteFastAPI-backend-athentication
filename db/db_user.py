@@ -23,9 +23,9 @@ def create_user(db:Session, request:UserBase):
     db.refresh(new_user)
 
     default_accounts = [
-        DbAccount(user_id=new_user.user_id, description="Visa", user_balance=0),
-        DbAccount(user_id=new_user.user_id, description="Chequing", user_balance=0),
-        DbAccount(user_id=new_user.user_id, description="LineOfCredit", user_balance=0),
+        DbAccount(user_id=new_user.user_id, description="Chequing", user_balance=0, account_kind="asset"),
+        DbAccount(user_id=new_user.user_id, description="Visa", user_balance=0, account_kind="debt"),
+        DbAccount(user_id=new_user.user_id, description="Line Of Credit", user_balance=0, account_kind="debt"),
     ]
     default_category=[
                     DbCategories(user_id=new_user.user_id, description="Other", category_name="other")

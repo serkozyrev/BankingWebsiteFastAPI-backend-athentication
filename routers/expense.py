@@ -22,9 +22,8 @@ def add_expense(request:ExpenseBase, db: Session = Depends(get_db), current_user
     return db_expense.add_expense(request, db, current_user.user_id)
 
 @router.get('/all')
-def get_all_expense(db: Session = Depends(get_db), current_user:UserAuth=Depends(get_current_user),
-                    page: int = Query(1, ge=1), limit: int= Query(10, ge=1, le=100)):
-    return db_expense.get_all_expense(db, current_user.user_id, page, limit)
+def get_all_expense(db: Session = Depends(get_db), current_user:UserAuth=Depends(get_current_user)):
+    return db_expense.get_all_expense(db, current_user.user_id)
 
 @router.post("/copyrecord")
 def copy_expense_record(request: RecordBase, db:Session = Depends(get_db), current_user:UserAuth=Depends(get_current_user)):

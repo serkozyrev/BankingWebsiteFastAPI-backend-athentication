@@ -12,7 +12,7 @@ from auth.oAuth2 import get_current_user
 from db.database import engine, get_db
 from db import models
 from routers import expense, analytics, user, aiAgent, categories, account
-from routers.schemas import RecordBase, SearchRecord
+from routers.schemas import RecordBase, SearchRecord, UserAuth
 
 app = FastAPI()
 

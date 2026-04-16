@@ -39,7 +39,8 @@ def analytics_expense(db: Session, user_id:int):
             .filter(
                 DbExpense.user_id == user_id,
                 DbExpense.account_id == account.account_id,
-                DbExpense.transaction_month == current_month
+                DbExpense.transaction_month == current_month,
+                DbExpense.transaction_type.in_(['expense', 'transfer'])
             )
             .all()
         )
@@ -87,7 +88,8 @@ def analytics_expense(db: Session, user_id:int):
             db.query(DbExpense)
             .filter(
                 DbExpense.user_id == user_id,
-                DbExpense.account_id == account.account_id
+                DbExpense.account_id == account.account_id,
+                DbExpense.transaction_type.in_(['expense', 'transfer'])
             )
             .all()
         )

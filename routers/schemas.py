@@ -110,3 +110,6 @@ class CategoryDisplay(BaseModel):
 
 class CategoryRecordBase(BaseModel):
     category_id:list[int]
+
+class AccountRecordBase(BaseModel):
+    account_id:list[int]

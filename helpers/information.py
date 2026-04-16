@@ -8,15 +8,35 @@ import datetime
 
 def collect_information(db:Session, user_id:int):
     accounts = db.query(DbAccount).filter(DbAccount.user_id == user_id).order_by(DbAccount.account_id).all()
-    accounts_list = [
-        {
-            'id': account.account_id,
-            'description': "Line of Credit" if account.description == "LineOfCredit" else account.description,
+    # accounts_list = [
+    #     {
+    #         'id': account.account_id,
+    #         'description': "Line of Credit" if account.description == "LineOfCredit" else account.description,
+    #         'account_kind': account.account_kind,
+    #         'amount': account.user_balance
+    #     }
+    #     for account in accounts
+    # ]
+    accounts_list=[]
+    current_month = str(datetime.date.today().month)
+    def sum_of_expenses(current_month, account_type):
+        query = (select(func.sum(DbExpense.expense_balance))
+                 .where(DbExpense.user_id == user_id,
+                        DbExpense.transaction_month == current_month,
+                        DbExpense.account_type == account_type,
+                        DbExpense.transaction_type == 'expense'
+                        ))
+        result = db.execute(query).scalar_one_or_none()
+        total = result or 0
+        return total
+    for account in accounts:
+        accounts_list.append({
+            "id": account.account_id,
+            "description": "Line of Credit" if account.description == "LineOfCredit" else account.description,
+            "amount": account.user_balance,
             'account_kind': account.account_kind,
-            'amount': account.user_balance
-        }
-        for account in accounts
-    ]
+            "currentMonthTotal": sum_of_expenses(current_month, account.description)
+        })
 
     return {"accounts": accounts_list}
 

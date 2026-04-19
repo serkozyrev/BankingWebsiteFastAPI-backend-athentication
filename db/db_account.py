@@ -35,8 +35,12 @@ def get_all_accounts(db: Session, user_id: int):
 def delete_account_record(request:AccountRecordBase, db:Session, user_id:int):
     print(request.account_id)
     for record in request.account_id:
-        existing_account = db.query(DbAccount).filter(DbAccount.user_id == user_id,
-                                                          DbAccount.account_id == record).first()
+        existing_account = (db.query(DbAccount)
+                            .filter(
+                                DbAccount.user_id == user_id,
+                                DbAccount.account_id == record)
+                            .first()
+                            )
         if existing_account:
             db.delete(existing_account)
     db.commit()

@@ -5,7 +5,7 @@ from decimal import Decimal
 from sqlalchemy import cast, desc, Integer, select, func
 from sqlalchemy.testing.pickleable import User
 
-from routers.schemas import AccountBase
+from routers.schemas import AccountBase, AccountRecordBase
 from sqlalchemy.orm import Session
 from db.models import DbAccount
 import datetime

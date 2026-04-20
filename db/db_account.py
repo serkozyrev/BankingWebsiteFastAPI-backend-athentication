@@ -30,7 +30,7 @@ def add_account(request: AccountBase, db: Session, user_id: int):
     return {'message': 'Account created successfully', 'accounts':account_info}
 
 def get_all_accounts(db: Session, user_id: int):
-    return (db.query(DbAccount).filter(DbAccount.user_id == user_id).order_by(DbAccount.description).all())
+    return db.query(DbAccount).filter(DbAccount.user_id == user_id).order_by(DbAccount.description).all()
 
 def delete_account_record(request:AccountRecordBase, db:Session, user_id:int):
     print(request.account_id)

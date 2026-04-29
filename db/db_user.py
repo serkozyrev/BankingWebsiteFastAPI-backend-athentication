@@ -20,7 +20,6 @@ def create_user(db:Session, request:UserBase):
     db.add(new_user)
     db.commit()
 
-    db.refresh(new_user)
 
     default_accounts = [
         DbAccount(user_id=new_user.user_id, description="Chequing", user_balance=0, account_kind="asset"),
@@ -32,6 +31,7 @@ def create_user(db:Session, request:UserBase):
     db.add_all(default_accounts)
     db.add(default_category)
     db.commit()
+    db.refresh(new_user)
     return new_user
 
 def get_all_users(db:Session):

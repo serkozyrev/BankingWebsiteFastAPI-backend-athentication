@@ -27,12 +27,10 @@ def create_user(db:Session, request:UserBase):
         DbAccount(user_id=new_user.user_id, description="Visa", user_balance=0, account_kind="debt"),
         DbAccount(user_id=new_user.user_id, description="Line Of Credit", user_balance=0, account_kind="debt"),
     ]
-    default_category=[
-                    DbCategories(user_id=new_user.user_id, description="Other", category_name="other")
-    ]
+    default_category=DbCategories(user_id=new_user.user_id, description="Other", category_name="other")
 
     db.add_all(default_accounts)
-    db.add_all(default_category)
+    db.add(default_category)
     db.commit()
     return new_user
 

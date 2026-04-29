@@ -32,7 +32,7 @@ def create_user(db:Session, request:UserBase):
     ]
 
     db.add_all(default_accounts)
-    db.add(default_category)
+    db.add_all(default_category)
     db.commit()
     return new_user
 

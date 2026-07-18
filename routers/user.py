@@ -21,19 +21,19 @@ def create_user(request:UserBase, db:Session=Depends(get_db)):
     return db_user.create_user(db, request)
 
 #read user
-@router.get('/', response_model=List[UserDisplay])
-def get_all_users(db:Session=Depends(get_db), current_user:UserAuth=Depends(get_current_user)):
-    return db_user.get_all_users(db)
+# @router.get('/', response_model=List[UserDisplay])
+# def get_all_users(db:Session=Depends(get_db), current_user:UserAuth=Depends(get_current_user)):
+#     return db_user.get_all_users(db)
 
-@router.get("/{user_id}", response_model=UserDisplay)
+@router.get("/me", response_model=UserDisplay)
 def get_user(user_id:int, db:Session=Depends(get_db), current_user:UserAuth=Depends(get_current_user)):
-    return db_user.get_user(db, user_id)
+    return db_user.get_user(db, current_user.user_id)
 #update user
 # @router.put("/{user_id}/update")
 # def update_user(user_id: int, request:UserBase, db:Session=Depends(get_db), current_user:UserAuth=Depends(get_current_user)):
 #     return db_user.update_user(db, request, user_id)
 
 #delete user
-@router.get("/delete/{user_id}")
+@router.delete("/me")
 def delete_user(user_id: int, db:Session=Depends(get_db), current_user:UserAuth=Depends(get_current_user)):
-    return db_user.delete_user(db, user_id)
+    return db_user.delete_user(db, current_user.user_id)
